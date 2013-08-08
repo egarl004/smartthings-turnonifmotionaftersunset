@@ -1,0 +1,77 @@
+/**
+ *  Turn On if Motion bewteen Sunset and Sunrise
+ *
+ *  Much thanks to kris@linguist.net 
+ *  Author: emersongarland@gmail.com
+ *  Date: 2013-06-17
+ */
+
+preferences {
+	section("When there's movement") {
+    input "motion1", "capability.motionSensor", title: "Where?", multiple: true, required: true
+	}
+	
+    section("After sunset, turn on") {
+    input "switch1", "capability.switch", title: "Switch", multiple: true, required: true
+    }
+    
+    section("And stay on for") {
+    input "minutes1", "number", title: "Amount", required: true
+    }
+}
+
+
+def installed()
+{
+	subscribe(motion1, "motion.active", motionActiveHandler)
+	schedule("0 * * * * ?", "scheduleCheck")
+}
+
+def updated()
+{
+	unsubscribe()
+	subscribe(motion1, "motion.active", motionActiveHandler)
+	schedule("0 * * * * ?", "scheduleCheck")
+}
+
+def checkNighttime() {
+	
+    def data = getWeatherFeature( "astronomy" )
+	log.debug( "Sunset today is at ${data.moon_phase.sunset.hour}:${data.moon_phase.sunset.minute}" )
+	log.debug( "Sunrise today is at ${data.moon_phase.sunrise.hour}:${data.moon_phase.sunrise.minute}" )
+	log.debug( "The current time is ${data.moon_phase.current_time.hour}:${data.moon_phase.current_time.minute}" )
+    def sunsettime = data.moon_phase.sunset.hour + data.moon_phase.sunset.minute
+	def sunrisetime = data.moon_phase.sunrise.hour + data.moon_phase.sunrise.minute
+	def currenttime = data.moon_phase.current_time.hour + data.moon_phase.current_time.minute
+	if ((currenttime.toInteger() >= sunsettime.toInteger()) || (currenttime.toInteger() <= sunrisetime.toInteger())) {
+        return true
+    } 
+    else {
+	    return false
+	    }
+    }
+
+def motionActiveHandler(evt) {  
+        if (evt.value == "active") {
+            if (checkNighttime()) {
+				switch1.on()
+        		state.inactiveAt = now()
+    }
+    else if (evt.value == "inactive") {
+        if(!state.inactiveAt) {
+            state.inactiveAt = now()
+        }
+    }
+}
+}
+
+def scheduleCheck() {
+	if (state.inactiveAt) {
+		def elapsed = now() - state.inactiveAt
+		def threshold = 1000 * 60 * minutes1
+		if (elapsed >= threshold) {
+			switch1.off()
+			state.inactiveAt = null
+		}
+	}
+}
