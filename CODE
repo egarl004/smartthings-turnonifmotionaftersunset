@@ -16,7 +16,7 @@ preferences {
     }
     
     section("And stay on for") {
-    input "minutes1", "number", title: "Amount", required: true
+    input "minutes1", "number", title: "Minutes", required: true
     }
 }
 
