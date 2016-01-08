@@ -1,0 +1,1 @@
+This smartthings app provides brighten my path and darken behind me in a single app that also delays the turn off so that it is useful in areas that may not have high motion but still should have the lights on. 
